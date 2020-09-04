@@ -1,0 +1,6 @@
+[submodule "miosix-kernel"]
+	path = miosix-kernel
+	url = https://miosix.org/git-public/miosix-kernel.git
+[submodule "fcpp"]
+	path = fcpp
+	url = https://github.com/fcpp/fcpp.git
