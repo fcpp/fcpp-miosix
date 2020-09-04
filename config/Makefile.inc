@@ -28,7 +28,7 @@
 #OPT_BOARD := stm32f103cb_als_mainboard_rev2
 #OPT_BOARD := stm32f100cb_tempsensor
 #OPT_BOARD := stm32f429zi_oledboard2
-#OPT_BOARD := efm32gg332f1024_wandstem
+OPT_BOARD := efm32gg332f1024_wandstem
 #OPT_BOARD := stm32f411re_nucleo
 #OPT_BOARD := stm32f429zi_skyward_anakin
 #OPT_BOARD := stm32f100rc_solertegiard
