@@ -18,56 +18,62 @@ SUBDIRS := $(KPATH)
 ##
 ## List here your source files (both .s, .c and .cpp)
 ##
-SRC :=                                  		\
-src/main.cpp									\
-fcpp/src/lib/common.cpp							\
-fcpp/src/lib/coordination/utils.cpp				\
-fcpp/src/lib/coordination/collection.cpp		\
-fcpp/src/lib/coordination/geometry.cpp			\
-fcpp/src/lib/coordination/election.cpp			\
-fcpp/src/lib/coordination/spreading.cpp			\
-fcpp/src/lib/coordination.cpp					\
-fcpp/src/lib/component.cpp						\
-fcpp/src/lib/internal/context.cpp				\
-fcpp/src/lib/internal/trace.cpp					\
-fcpp/src/lib/internal/flat_ptr.cpp				\
-fcpp/src/lib/internal/twin.cpp					\
-fcpp/src/lib/simulation/physical_connector.cpp	\
-fcpp/src/lib/simulation/spawner.cpp				\
-fcpp/src/lib/simulation/physical_position.cpp	\
-fcpp/src/lib/simulation/batch.cpp				\
-fcpp/src/lib/component/timer.cpp				\
-fcpp/src/lib/component/storage.cpp				\
-fcpp/src/lib/component/base.cpp					\
-fcpp/src/lib/component/scheduler.cpp			\
-fcpp/src/lib/component/calculus.cpp				\
-fcpp/src/lib/component/identifier.cpp			\
-fcpp/src/lib/component/logger.cpp				\
-fcpp/src/lib/component/randomizer.cpp			\
-fcpp/src/lib/option/distribution.cpp			\
-fcpp/src/lib/option/aggregator.cpp				\
-fcpp/src/lib/option/sequence.cpp				\
-fcpp/src/lib/option/metric.cpp					\
-fcpp/src/lib/option/connect.cpp					\
-fcpp/src/lib/data.cpp							\
-fcpp/src/lib/option.cpp							\
-fcpp/src/lib/common/serialize.cpp				\
-fcpp/src/lib/common/mutex.cpp					\
-fcpp/src/lib/common/multitype_map.cpp			\
-fcpp/src/lib/common/profiler.cpp				\
-fcpp/src/lib/common/ostream.cpp					\
-fcpp/src/lib/common/traits.cpp					\
-fcpp/src/lib/common/algorithm.cpp				\
-fcpp/src/lib/common/tagged_tuple.cpp			\
-fcpp/src/lib/common/random_access_map.cpp		\
-fcpp/src/lib/internal.cpp						\
-fcpp/src/lib/beautify.cpp						\
-fcpp/src/lib/data/vec.cpp						\
-fcpp/src/lib/data/tuple.cpp						\
-fcpp/src/lib/data/field.cpp						\
-fcpp/src/lib/simulation.cpp						\
-fcpp/src/lib/fcpp.cpp							\
-fcpp/src/lib/settings.cpp
+SRC :=                                              \
+fcpp/src/lib/common/algorithm.cpp                   \
+fcpp/src/lib/common/multitype_map.cpp               \
+fcpp/src/lib/common/mutex.cpp                       \
+fcpp/src/lib/common/ostream.cpp                     \
+fcpp/src/lib/common/profiler.cpp                    \
+fcpp/src/lib/common/random_access_map.cpp           \
+fcpp/src/lib/common/serialize.cpp                   \
+fcpp/src/lib/common/tagged_tuple.cpp                \
+fcpp/src/lib/common/traits.cpp                      \
+fcpp/src/lib/common.cpp                             \
+fcpp/src/lib/component/base.cpp                     \
+fcpp/src/lib/component/calculus.cpp                 \
+fcpp/src/lib/component/identifier.cpp               \
+fcpp/src/lib/component/logger.cpp                   \
+fcpp/src/lib/component/randomizer.cpp               \
+fcpp/src/lib/component/scheduler.cpp                \
+fcpp/src/lib/component/storage.cpp                  \
+fcpp/src/lib/component/timer.cpp                    \
+fcpp/src/lib/component.cpp                          \
+fcpp/src/lib/coordination/collection.cpp            \
+fcpp/src/lib/coordination/election.cpp              \
+fcpp/src/lib/coordination/geometry.cpp              \
+fcpp/src/lib/coordination/spreading.cpp             \
+fcpp/src/lib/coordination/utils.cpp                 \
+fcpp/src/lib/coordination.cpp                       \
+fcpp/src/lib/data/field.cpp                         \
+fcpp/src/lib/data/tuple.cpp                         \
+fcpp/src/lib/data/vec.cpp                           \
+fcpp/src/lib/data.cpp                               \
+fcpp/src/lib/deployment/hardware_connector.cpp      \
+fcpp/src/lib/deployment/hardware_identifier.cpp     \
+fcpp/src/lib/deployment/hardware_logger.cpp         \
+fcpp/src/lib/deployment/os.cpp                      \
+fcpp/src/lib/deployment.cpp                         \
+fcpp/src/lib/internal/context.cpp                   \
+fcpp/src/lib/internal/flat_ptr.cpp                  \
+fcpp/src/lib/internal/trace.cpp                     \
+fcpp/src/lib/internal/twin.cpp                      \
+fcpp/src/lib/internal.cpp                           \
+fcpp/src/lib/option/aggregator.cpp                  \
+fcpp/src/lib/option/connect.cpp                     \
+fcpp/src/lib/option/distribution.cpp                \
+fcpp/src/lib/option/metric.cpp                      \
+fcpp/src/lib/option/sequence.cpp                    \
+fcpp/src/lib/option.cpp                             \
+fcpp/src/lib/simulation/batch.cpp                   \
+fcpp/src/lib/simulation/simulated_connector.cpp     \
+fcpp/src/lib/simulation/simulated_positioner.cpp    \
+fcpp/src/lib/simulation/spawner.cpp                 \
+fcpp/src/lib/simulation.cpp                         \
+fcpp/src/lib/beautify.cpp                           \
+fcpp/src/lib/fcpp.cpp                               \
+fcpp/src/lib/settings.cpp                           \
+src/driver.cpp                                      \
+src/main.cpp
 
 ##
 ## List here additional static libraries with relative path

@@ -1,11 +1,65 @@
+// Copyright © 2020 Giorgio Audrito. All Rights Reserved.
 
-#include <cstdio>
 #include "miosix.h"
+#include "lib/fcpp.hpp"
+#include "driver.hpp"
 
-using namespace std;
+#define DIAMETER  10 // maximum diameter in hops for a deployment
+
 using namespace miosix;
+using namespace fcpp;
+using namespace component::tags;
 
-int main()
-{
-    //iprintf("Hello world, write your application here\n");
+//! @brief Storage tags
+//! @{
+//! @brief Total round count since start.
+struct round_count {};
+//! @brief Current count of neighbours.
+struct neigh_count {};
+//! @brief Minimum UID in the network.
+struct min_uid {};
+//! @brief Distance in hops to the device with minimum UID.
+struct hop_dist {};
+//! @brief Whether some device in the network has only one neighbour.
+struct some_weak {};
+//! @}
+
+
+//! @brief Main aggregate function.
+FUN() void test_program(ARGS, int diameter) { CODE
+    node.storage(round_count{}) = coordination::counter(CALL);
+    node.storage(neigh_count{}) = count_hood(CALL);
+    node.storage(min_uid{}) = coordination::diameter_election(CALL, diameter);
+    node.storage(hop_dist{}) = coordination::abf_hops(CALL, node.uid == node.storage(min_uid{}));
+    bool collect_weak = coordination::sp_collection(CALL, node.storage(hop_dist{}), node.storage(neigh_count{}) == 1, false, [](bool x, bool y) {
+        return x or y;
+    });
+    node.storage(some_weak{}) = coordination::broadcast(CALL, node.storage(hop_dist{}), collect_weak);
+}
+
+
+//! @brief Main struct calling `test_program`.
+MAIN(test_program,,DIAMETER);
+
+//! @brief FCPP setup.
+DECLARE_OPTIONS(opt,
+    program<main>,
+    round_schedule<sequence::periodic_n<1, 0, 1>>,
+    exports<
+        bool, int, device_t, tuple<device_t, int>, tuple<int, device_t>
+    >,
+    tuple_store<
+        round_count,int,
+        neigh_count,int,
+        min_uid,    device_t,
+        hop_dist,   int,
+        some_weak,  bool
+    >
+);
+
+//! @brief Main function starting FCPP.
+int main() {
+    component::deployment<opt>::net network{common::make_tagged_tuple<>()};
+    network.run();
+    return 0;
 }
