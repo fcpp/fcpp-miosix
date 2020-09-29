@@ -37,7 +37,7 @@ namespace os {
 
 
 //! @brief Access the local unique identifier.
-device_t uid() {
+inline device_t uid() {
     uint64_t id = *reinterpret_cast<uint64_t*>(0x0FE081F0);
 #if   FCPP_DEVICE == 64
     return id;
