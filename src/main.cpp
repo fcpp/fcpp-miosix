@@ -27,7 +27,7 @@ struct some_weak {};
 
 //! @brief Main aggregate function.
 FUN() void test_program(ARGS, int diameter) { CODE
-    node.storage(round_count{}) = coordination::counter(CALL);
+    node.storage(round_count{}) = coordination::counter(CALL, hops_t{1});
     node.storage(neigh_count{}) = count_hood(CALL);
     node.storage(min_uid{}) = coordination::diameter_election(CALL, diameter);
     node.storage(hop_dist{}) = coordination::abf_hops(CALL, node.uid == node.storage(min_uid{}));
@@ -46,13 +46,13 @@ DECLARE_OPTIONS(opt,
     program<main>,
     round_schedule<sequence::periodic_n<1, 0, 1>>,
     exports<
-        bool, int, device_t, tuple<device_t, int>, tuple<int, device_t>
+        bool, hops_t, device_t, tuple<device_t, hops_t>
     >,
     tuple_store<
         round_count,int,
         neigh_count,int,
         min_uid,    device_t,
-        hop_dist,   int,
+        hop_dist,   hops_t,
         some_weak,  bool
     >
 );
