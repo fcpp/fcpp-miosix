@@ -99,7 +99,7 @@ struct transceiver {
     void send(device_t id, std::vector<char> m) const {
         m.resize(m.size() + sizeof(device_t));
         if (m.size() > 125) {
-            printf("Send failed: message overflow\n");
+            printf("Send failed: message overflow (%d/125 bytes)\n", m.size());
             return;
         }
         *reinterpret_cast<device_t*>(m.data() + m.size() - sizeof(device_t)) = id;
