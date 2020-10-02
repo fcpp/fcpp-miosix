@@ -129,10 +129,10 @@ struct transceiver {
             } else {
                 printf("Receive error: ");
                 switch (result.error) {
-                    case miosix::RecvResult::OK:       printf("too short packet\n"); break;
-                    case miosix::RecvResult::TOO_LONG: printf("too long packet\n");  break;
-                    case miosix::RecvResult::CRC_FAIL: printf("wrong CRC\n");        break;
-                    case miosix::RecvResult::TIMEOUT:  printf("timeout\n");          break;
+                    case miosix::RecvResult::OK:       printf("too short packet (%d/%d bytes)\n", result.size, (int)sizeof(device_t)); break;
+                    case miosix::RecvResult::TOO_LONG: printf("too long packet (%d/125 bytes)\n", result.size); break;
+                    case miosix::RecvResult::CRC_FAIL: printf("wrong CRC\n"); break;
+                    case miosix::RecvResult::TIMEOUT:  printf("timeout\n");   break;
                 }
                 m.content.clear();
             }
