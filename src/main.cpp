@@ -31,7 +31,7 @@ FUN() void test_program(ARGS, int diameter) { CODE
     node.storage(neigh_count{}) = count_hood(CALL);
     node.storage(min_uid{}) = coordination::diameter_election(CALL, diameter);
     node.storage(hop_dist{}) = coordination::abf_hops(CALL, node.uid == node.storage(min_uid{}));
-    bool collect_weak = coordination::sp_collection(CALL, node.storage(hop_dist{}), node.storage(neigh_count{}) == 1, false, [](bool x, bool y) {
+    bool collect_weak = coordination::sp_collection(CALL, node.storage(hop_dist{}), node.storage(neigh_count{}) <= 2, false, [](bool x, bool y) {
         return x or y;
     });
     node.storage(some_weak{}) = coordination::broadcast(CALL, node.storage(hop_dist{}), collect_weak);
@@ -44,7 +44,7 @@ MAIN(test_program,,DIAMETER);
 //! @brief FCPP setup.
 DECLARE_OPTIONS(opt,
     program<main>,
-    round_schedule<sequence::periodic_n<1, 0, 1>>,
+    round_schedule<sequence::periodic_n<1, 1, 1>>,
     exports<
         bool, hops_t, device_t, tuple<device_t, hops_t>
     >,
