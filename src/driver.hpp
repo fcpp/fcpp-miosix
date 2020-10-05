@@ -25,6 +25,8 @@
 #include "miosix.h"
 #include "interfaces-impl/transceiver.h"
 
+#define DBG_PRINT_SUCCESSFUL_CALLS
+
 
 /**
  * @brief Namespace containing all the objects in the FCPP library.
@@ -105,7 +107,12 @@ struct transceiver {
         *reinterpret_cast<device_t*>(m.data() + m.size() - sizeof(device_t)) = id;
         for (int delay = data.retry_time; delay < data.fail_time; delay *= 2) {
             try {
-                if (m_transceiver.sendCca(m.data(), m.size())) break;
+                if (m_transceiver.sendCca(m.data(), m.size())) {
+                    #ifdef DBG_PRINT_SUCCESSFUL_CALLS
+                    printf("Sent %d byte packet\n", m.size());
+                    #endif //DBG_PRINT_SUCCESSFUL_CALLS
+                    break;
+                }
                 std::uniform_int_distribution<long long> d(delay, 2*delay);
                 std::this_thread::sleep_for(std::chrono::nanoseconds(d(m_rng)));
             } catch (std::exception& e) {
@@ -126,13 +133,15 @@ struct transceiver {
                 m.power = result.rssi; // TODO: convert in meters
                 m.device = *reinterpret_cast<device_t*>(m.content.data() + result.size - sizeof(device_t));
                 m.content.resize(result.size - sizeof(device_t));
+                #ifdef DBG_PRINT_SUCCESSFUL_CALLS
+                printf("Received %d byte packet\n", result.size);
+                #endif //DBG_PRINT_SUCCESSFUL_CALLS
             } else {
-                printf("Receive error: ");
                 switch (result.error) {
-                    case miosix::RecvResult::OK:       printf("too short packet (%d/%d bytes)\n", result.size, (int)sizeof(device_t)); break;
-                    case miosix::RecvResult::TOO_LONG: printf("too long packet (%d/125 bytes)\n", result.size); break;
-                    case miosix::RecvResult::CRC_FAIL: printf("wrong CRC\n"); break;
-                    case miosix::RecvResult::TIMEOUT:  printf("timeout\n");   break;
+                    case miosix::RecvResult::OK:       printf("Receive error: too short packet (%d/%d bytes)\n", result.size, (int)sizeof(device_t)); break;
+                    case miosix::RecvResult::TOO_LONG: printf("Receive error: too long packet (%d/125 bytes)\n", result.size); break;
+                    case miosix::RecvResult::CRC_FAIL: printf("Receive error: wrong CRC\n"); break;
+                    case miosix::RecvResult::TIMEOUT:  break;
                 }
                 m.content.clear();
             }
