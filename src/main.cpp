@@ -21,6 +21,18 @@ using namespace miosix;
 using namespace fcpp;
 using namespace component::tags;
 
+//! @brief \return the maximum stack used by the node starting from the boot
+uint16_t getMaxStackUsed()
+{
+    return MemoryProfiling::getStackSize() - MemoryProfiling::getAbsoluteFreeStack();
+}
+
+//! @brief \return the maximum heap used by the node (divided by 2 to fit in a short)
+uint16_t getMaxHeapUsed()
+{
+    return (MemoryProfiling::getHeapSize() - MemoryProfiling::getAbsoluteFreeHeap()) / 2;
+}
+
 //! @brief Storage tags
 //! @{
 //! @brief Total round count since start.
@@ -54,8 +66,8 @@ FUN(T) T max_ever(ARGS, T value) { CODE
 
 //! @brief Tracks the maximum consumption of memory and message resources.
 FUN() void resource_tracking(ARGS) { CODE
-    node.storage(max_stack{}) = max_ever(CALL, uint16_t{42}); //TODO: @Federico add system call
-    node.storage(max_heap{}) = max_ever(CALL, uint16_t{42}); //TODO: @Federico add system call
+    node.storage(max_stack{}) = max_ever(CALL, getMaxStackUsed());
+    node.storage(max_heap{}) = max_ever(CALL, getMaxHeapUsed());
     node.storage(max_msg{}) = max_ever(CALL, uint8_t{42}); //TODO: @Giorgio add node.msg_size() built-in to inspect it
 }
 
