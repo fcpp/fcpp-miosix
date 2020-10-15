@@ -26,6 +26,7 @@
 #include "interfaces-impl/transceiver.h"
 
 #define DBG_PRINT_SUCCESSFUL_CALLS
+#define DBG_TRANSCEIVER_ACTIVITY_LED
 
 
 /**
@@ -37,6 +38,7 @@ namespace fcpp {
 //! @brief Namespace containing OS-dependent functionalities.
 namespace os {
 
+void activity();
 
 //! @brief Access the local unique identifier.
 inline device_t uid() {
@@ -108,6 +110,7 @@ struct transceiver {
         for (int delay = data.retry_time; delay < data.fail_time; delay *= 2) {
             try {
                 if (m_transceiver.sendCca(m.data(), m.size())) {
+                    activity();
                     #ifdef DBG_PRINT_SUCCESSFUL_CALLS
                     printf("Sent %d byte packet\n", m.size());
                     #endif //DBG_PRINT_SUCCESSFUL_CALLS
@@ -133,6 +136,7 @@ struct transceiver {
                 m.power = result.rssi; // TODO: convert in meters
                 m.device = *reinterpret_cast<device_t*>(m.content.data() + result.size - sizeof(device_t));
                 m.content.resize(result.size - sizeof(device_t));
+                activity();
                 #ifdef DBG_PRINT_SUCCESSFUL_CALLS
                 printf("Received %d byte packet\n", result.size);
                 #endif //DBG_PRINT_SUCCESSFUL_CALLS
