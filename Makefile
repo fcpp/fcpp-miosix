@@ -84,7 +84,7 @@ LIBS :=
 ## List here additional include directories (in the form -Iinclude_dir)
 ##
 INCLUDE_DIRS :=							\
--Ifcpp/src -DFCPP_SYSTEM=FCPP_SYSTEM_EMBEDDED -DFCPP_ENVIRONMENT=FCPP_ENVIRONMENT_PHYSICAL
+-Ifcpp/src -DFCPP_SYSTEM=FCPP_SYSTEM_EMBEDDED -DFCPP_ENVIRONMENT=FCPP_ENVIRONMENT_PHYSICAL -DFCPP_TRACE=32
 
 ##############################################################################
 ## You should not need to modify anything below                             ##
