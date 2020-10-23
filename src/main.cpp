@@ -66,12 +66,12 @@ FUN(T) T max_ever(ARGS, T value) { CODE
 FUN() void resource_tracking(ARGS) { CODE
     node.storage(max_stack{}) = max_ever(node, 0, getMaxStackUsed());
     node.storage(max_heap{}) = uint32_t{2} * max_ever(node, 1, getMaxHeapUsed());
-    node.storage(max_msg{}) = max_ever(node, 2, uint8_t{42}); //TODO: @Giorgio add node.msg_size() built-in to inspect it
+    node.storage(max_msg{}) = max_ever(node, 2, (uint8_t)min(node.msg_size(), size_t{255}));
 }
 
 //! @brief Records the set of neighbours ever connected before RECORD_TIME.
 FUN() void topology_recording(ARGS) { CODE
-    field<device_t> nbr_uids = nbr(node, 0, node.uid); //TODO: @Giorgio add nbr_uid() built-in to get it without increasing message size
+    field<device_t> nbr_uids = nbr_uid(node, 0);
     node.storage(nbr_list{}) = old(node, 1, std::unordered_set<device_t>{}, [&](std::unordered_set<device_t> n){
         if (node.current_time() < RECORD_TIME)
             fold_hood(node, 2, [&](device_t i, int){
@@ -103,7 +103,7 @@ FUN() void contact_tracing(ARGS, times_t window, bool positive) { CODE
           else ++it;
         }
         // add new contacts
-        field<device_t> nbr_uids = nbr(node, 1, node.uid); //TODO: @Giorgio add nbr_uid() built-in to get it without increasing message size
+        field<device_t> nbr_uids = nbr_uid(node, 1);
         fold_hood(node, 2, [&](device_t i, int){
             c[i] = node.current_time();
             return 0;

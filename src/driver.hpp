@@ -59,11 +59,11 @@ inline device_t uid() {
  *
  * It should have the following minimal public interface:
  * ~~~~~~~~~~~~~~~~~~~~~~~~~{.cpp}
- * struct data_type;                       // default-constructible type for settings
- * data_type data;                         // network settings
- * transceiver(data_type);                 // constructor with settings
- * void send(device_t, std::vector<char>); // broadcasts a given message
- * message_type receive();                 // receives the next incoming message (empty if no incoming message)
+ * struct data_type;                            // default-constructible type for settings
+ * data_type data;                              // network settings
+ * transceiver(data_type);                      // constructor with settings
+ * bool send(device_t, std::vector<char>, int); // broadcasts a message after given attemps
+ * message_type receive(int);                   // listens for messages after given failed sends
  * ~~~~~~~~~~~~~~~~~~~~~~~~~
  */
 struct transceiver {
@@ -73,15 +73,13 @@ struct transceiver {
         int frequency;
         //! @brief Transmission power in in dBm.
         int power;
-        //! @brief Time in nanoseconds after which send/receive is first retried.
-        long long retry_time;
-        //! @brief Time in nanoseconds after which send/receive is aborted.
-        long long fail_time;
-        //! @brief Time in nanoseconds for each receive call.
+        //! @brief Base time in nanoseconds for each receive call.
         long long receive_time;
+        //! @brief Number of attempts after which a send is aborted.
+        uint8_t send_attempts;
 
         //! @brief Member constructor with defaults.
-        data_type(int freq = 2450, int pow = 5, long long retry = 10000000LL, long long fail = 1000000000LL, long long recv = 50000000LL) : frequency(freq), power(pow), retry_time(retry), fail_time(fail), receive_time(recv) {}
+        data_type(int freq = 2450, int pow = 5, long long recv = 50000000LL, uint8_t sndatt = 5) : frequency(freq), power(pow), receive_time(recv), send_attempts(sndatt) {}
     };
 
     //! @brief Network settings.
@@ -100,33 +98,35 @@ struct transceiver {
     }
 
     //! @brief Broadcasts a given message.
-    void send(device_t id, std::vector<char> m) const {
+    bool send(device_t id, std::vector<char> m, int attempt) const {
         m.resize(m.size() + sizeof(device_t));
         if (m.size() > 125) {
             printf("Send failed: message overflow (%d/125 bytes)\n", m.size());
-            return;
+            return true;
         }
         *reinterpret_cast<device_t*>(m.data() + m.size() - sizeof(device_t)) = id;
-        for (int delay = data.retry_time; delay < data.fail_time; delay *= 2) {
-            try {
-                if (m_transceiver.sendCca(m.data(), m.size())) {
-                    activity();
-                    #ifdef DBG_PRINT_SUCCESSFUL_CALLS
-                    printf("Sent %d byte packet\n", m.size());
-                    #endif //DBG_PRINT_SUCCESSFUL_CALLS
-                    break;
-                }
-                std::uniform_int_distribution<long long> d(delay, 2*delay);
-                std::this_thread::sleep_for(std::chrono::nanoseconds(d(m_rng)));
-            } catch (std::exception& e) {
-                printf("Send failed: %s\n", e.what());
-            }
+        try {
+            if (m_transceiver.sendCca(m.data(), m.size())) {
+                activity();
+                #ifdef DBG_PRINT_SUCCESSFUL_CALLS
+                printf("Sent %d byte packet\n", m.size());
+                #endif //DBG_PRINT_SUCCESSFUL_CALLS
+                return true;
+            } else return attempt == data.send_attempts;
+        } catch (std::exception& e) {
+            printf("Send failed: %s\n", e.what());
+            return attempt == data.send_attempts;
         }
     }
 
     //! @brief Receives the next incoming message (empty if no incoming message).
-    message_type receive() const {
-        const long long interval = m_timer.ns2tick(data.receive_time);
+    message_type receive(int attempt) const {
+        long long interval = (data.receive_time << attempt);
+        if (attempt > 0) {
+            std::uniform_int_distribution<long long> d(data.receive_time, interval);
+            interval = d(m_rng);
+        }
+        interval = m_timer.ns2tick(interval);
         message_type m;
         m.content.resize(125);
         try {
