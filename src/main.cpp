@@ -53,6 +53,8 @@ struct max_msg {};
 struct nbr_list {};
 //! @brief Whether the device has been infected.
 struct infected {};
+//! @brief The list of positive devices in the network.
+struct positives {};
 //! @}
 
 //! @brief Computes the maximum ever appeared in the network for a given value.
@@ -110,7 +112,7 @@ FUN() void contact_tracing(ARGS, times_t window, bool positive) { CODE
         }, nbr_uids, 0);
         return c;
     });
-    contact_t positives = nbr(node, 3, contact_t{}, [&](field<contact_t> np){
+    node.storage(positives{}) = nbr(node, 3, contact_t{}, [&](field<contact_t> np){
         contact_t p{};
         if (positive) p[node.uid] = node.current_time();
         fold_hood(node, 4, [&](contact_t const& cs, int){
@@ -122,7 +124,7 @@ FUN() void contact_tracing(ARGS, times_t window, bool positive) { CODE
         return p;
     });
     node.storage(infected{}) = false;
-    for (auto c : positives)
+    for (auto c : node.storage(positives{}))
         if (contacts.count(c.first))
             node.storage(infected{}) = true;
 }
@@ -134,7 +136,7 @@ FUN() void case_study(ARGS) { CODE
 #if CASE_STUDY == VULNERABILITY_DETECTION
     vulnerability_detection(node, 2, DIAMETER);
 #elif CASE_STUDY == CONTACT_TRACING
-    contact_tracing(node, 3, WINDOW_TIME, false);
+    contact_tracing(node, 3, WINDOW_TIME, false); //TODO: change "false" with something that works
 #endif
     resource_tracking(node, 4);
     topology_recording(node, 5);
@@ -147,13 +149,13 @@ MAIN(case_study,);
 //! @brief FCPP setup.
 DECLARE_OPTIONS(opt,
     program<main>,
-    retain<metric::retain<15, 10>>,
-    round_schedule<sequence::periodic_n<1, 1, 1>>,
-    exports<
+    retain<metric::retain<15, 10>>, // messages are thrown away after 15/10 secs
+    round_schedule<sequence::periodic_n<1, 1, 1>>, // rounds are happening every 1 secs (den, start, period)
+    exports< // types that may appear in messages
         bool, hops_t, device_t, uint8_t, uint16_t, tuple<device_t, hops_t>,
         std::unordered_set<device_t>, std::unordered_map<device_t, times_t>
     >,
-    tuple_store<
+    tuple_store< // tag/type that can appear in node.storage(tag{}) = type{}, are printed in output
         round_count,int,
         neigh_count,int,
         min_uid,    device_t,
@@ -162,8 +164,9 @@ DECLARE_OPTIONS(opt,
         max_stack,  uint16_t,
         max_heap,   uint32_t,
         max_msg,    uint8_t,
-        nbr_list,   std::unordered_set<device_t>,
-        infected,   bool
+        infected,   bool,
+        positives,  std::unordered_map<device_t, times_t>,
+        nbr_list,   std::unordered_set<device_t>
     >
 );
 
