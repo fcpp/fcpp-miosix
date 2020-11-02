@@ -26,7 +26,7 @@
 #include "miosix.h"
 #include "interfaces-impl/transceiver.h"
 
-#define DBG_PRINT_SUCCESSFUL_CALLS
+//#define DBG_PRINT_SUCCESSFUL_CALLS
 #define DBG_TRANSCEIVER_ACTIVITY_LED
 
 
@@ -41,17 +41,41 @@ namespace os {
 
 void activity();
 
+inline int getHardcodedId()
+{
+    switch(*reinterpret_cast<uint64_t*>(0x0FE081F0))
+    {
+        case 0x243537035155c338: return 0;
+        case 0x243537005155c356: return 1;
+        case 0x243537005155c346: return 2;
+        case 0x243537025155c346: return 3;
+        case 0x243537035155c356: return 4;
+        case 0x243537035155bdca: return 5;
+        case 0x243537015155bdab: return 6;
+        case 0x243537015155c9bf: return 7;
+        case 0x2435370352c6aa9a: return 8;
+        case 0x243537015155bdba: return 9;
+        case 0x243537025155bdba: return 10;
+        case 0x243537025155bdca: return 11;
+        case 0x243537005155bdba: return 12;
+        case 0x243537035155bdba: return 13;
+        case 0x243537005155bdab: return 14;
+        default: assert(false);
+    }
+}
+
 //! @brief Access the local unique identifier.
 inline device_t uid() {
-    uint64_t id = *reinterpret_cast<uint64_t*>(0x0FE081F0);
-#if   FCPP_DEVICE == 64
-    return id;
-#else
-    device_t res = 0;
-    for (int i=0; i<64; i+=FCPP_DEVICE)
-        res ^= (id >> i) & ((1ULL << FCPP_DEVICE) - 1);
-    return res;
-#endif
+    return getHardcodedId();
+//     uint64_t id = *reinterpret_cast<uint64_t*>(0x0FE081F0);
+// #if   FCPP_DEVICE == 64
+//     return id;
+// #else
+//     device_t res = 0;
+//     for (int i=0; i<64; i+=FCPP_DEVICE)
+//         res ^= (id >> i) & ((1ULL << FCPP_DEVICE) - 1);
+//     return res;
+// #endif
 }
 
 
@@ -80,7 +104,7 @@ struct transceiver {
         uint8_t send_attempts;
 
         //! @brief Member constructor with defaults.
-        data_type(int freq = 2450, int pow = 5, long long recv = 50000000LL, uint8_t sndatt = 5) : frequency(freq), power(pow), receive_time(recv), send_attempts(sndatt) {}
+        data_type(int freq = 2450, int pow = -7, long long recv = 50000000LL, uint8_t sndatt = 5) : frequency(freq), power(pow), receive_time(recv), send_attempts(sndatt) {}
     };
 
     static const short rssiThreshold = -75; //dBm
