@@ -73,15 +73,23 @@ FUN() void resource_tracking(ARGS) { CODE
 
 //! @brief Records the set of neighbours ever connected before RECORD_TIME.
 FUN() void topology_recording(ARGS) { CODE
+    using map_t = std::unordered_map<device_t,times_t>;
     field<device_t> nbr_uids = nbr_uid(node, 0);
-    node.storage(nbr_list{}) = old(node, 1, std::unordered_set<device_t>{}, [&](std::unordered_set<device_t> n){
+    map_t nbr_counters = old(node, 1, map_t{}, [&](map_t n){
         if (node.current_time() < RECORD_TIME)
             fold_hood(node, 2, [&](device_t i, int){
-                n.insert(i);
+                if (n.count(i) == 0) n[i] = 0;
+                n[i] += 1;
                 return 0;
             }, nbr_uids, 0);
         return n;
     });
+    if (node.current_time() < RECORD_TIME) {
+        node.storage(nbr_list{}) = {};
+        for (const auto& it : nbr_counters)
+            if (it.second >= nbr_counters[node.uid]/2)
+                node.storage(nbr_list{}).insert(it.first);
+    }
 }
 
 //! @brief Computes whether there is a node with only one connected neighbour at a given time.
@@ -153,7 +161,7 @@ DECLARE_OPTIONS(opt,
     round_schedule<sequence::periodic_n<1, 1, 1>>, // rounds are happening every 1 secs (den, start, period)
     exports< // types that may appear in messages
         bool, hops_t, device_t, uint8_t, uint16_t, tuple<device_t, hops_t>,
-        std::unordered_set<device_t>, std::unordered_map<device_t, times_t>
+        std::unordered_map<device_t, times_t>
     >,
     tuple_store< // tag/type that can appear in node.storage(tag{}) = type{}, are printed in output
         round_count,int,
