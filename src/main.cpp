@@ -119,7 +119,7 @@ FUN() void topology_recording(ARGS) { CODE
     if (node.current_time() < RECORD_TIME) {
         node.storage(nbr_list{}).clear();
         for (const auto& it : nbr_counters)
-            if (it.second >= node.storage(round_count{})/2)
+            if (it.second >= RECORD_TIME/10)
                 node.storage(nbr_list{}).insert(it.first);
     }
 }
