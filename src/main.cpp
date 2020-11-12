@@ -110,7 +110,6 @@ FUN() void topology_recording(ARGS) { CODE
     node.storage(uid_list{}) = nbr_uids;
     map_t nbr_counters = fix_after(node, 1, old(node, 2, map_t{}, [&](map_t n){
         fold_hood(node, 3, [&](device_t i, int){
-            if (n.count(i) == 0) n[i] = 0;
             n[i] += 1;
             return 0;
         }, nbr_uids, 0);
@@ -120,7 +119,7 @@ FUN() void topology_recording(ARGS) { CODE
     if (node.current_time() < RECORD_TIME) {
         node.storage(nbr_list{}) = {};
         for (const auto& it : nbr_counters)
-            if (it.second >= nbr_counters[node.uid]/2)
+            if (it.second >= node.storage(round_count{})/2)
                 node.storage(nbr_list{}).insert(it.first);
     }
 }
