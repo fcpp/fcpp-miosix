@@ -11,6 +11,7 @@
 #define DIAMETER    10  // maximum diameter in hops for a deployment
 #define RECORD_TIME 300 // time in seconds during which the network topology is recorded
 #define WINDOW_TIME 60  // time in seconds during which positive node information is retained
+#define ROUND_PERIOD 1  // time in seconds between transmission rounds
 
 #define VULNERABILITY_DETECTION 1111
 #define CONTACT_TRACING         2222
@@ -122,7 +123,7 @@ FUN() void topology_recording(ARGS) { CODE
     if (node.current_time() < RECORD_TIME) {
         node.storage(nbr_list{}).clear();
         for (const auto& it : nbr_counters)
-            if (it.second >= RECORD_TIME/10)
+            if (it.second >= RECORD_TIME/2)
                 node.storage(nbr_list{}).insert(it.first);
     }
 }
@@ -193,7 +194,7 @@ MAIN(case_study,);
 DECLARE_OPTIONS(opt,
     program<main>,
     retain<metric::retain<5, 1>>, // messages are thrown away after 5/1 secs
-    round_schedule<sequence::periodic_n<1, 1, 1, RECORD_TIME>>, // rounds are happening every 1 secs (den, start, period, end)
+    round_schedule<sequence::periodic_n<1, ROUND_PERIOD, ROUND_PERIOD, RECORD_TIME>>, // rounds are happening every 1 secs (den, start, period, end)
     exports< // types that may appear in messages
         bool, hops_t, device_t, uint8_t, uint16_t, tuple<device_t, hops_t>,
         std::unordered_map<device_t, times_t>
