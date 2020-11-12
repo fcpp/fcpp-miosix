@@ -189,7 +189,7 @@ MAIN(case_study,);
 //! @brief FCPP setup.
 DECLARE_OPTIONS(opt,
     program<main>,
-    retain<metric::retain<15, 10>>, // messages are thrown away after 15/10 secs
+    retain<metric::retain<5, 1>>, // messages are thrown away after 5/1 secs
     round_schedule<sequence::periodic_n<1, 1, 1>>, // rounds are happening every 1 secs (den, start, period)
     exports< // types that may appear in messages
         bool, hops_t, device_t, uint8_t, uint16_t, tuple<device_t, hops_t>,
