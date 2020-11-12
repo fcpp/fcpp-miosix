@@ -127,7 +127,7 @@ FUN() void topology_recording(ARGS) { CODE
 
 //! @brief Computes whether there is a node with only one connected neighbour at a given time.
 FUN() void vulnerability_detection(ARGS, int diameter) { CODE
-    node.storage(min_uid{}) = fix_after(node, 0, coordination::diameter_election_debug(node, 1, diameter), RECORD_TIME);
+    node.storage(min_uid{}) = fix_after(node, 0, diameter_election_debug(node, 1, diameter), RECORD_TIME);
     node.storage(hop_dist{}) = fix_after(node, 2, coordination::abf_hops(node, 3, node.uid == node.storage(min_uid{})), RECORD_TIME);
     bool collect_weak = coordination::sp_collection(node, 4, node.storage(hop_dist{}), node.storage(neigh_count{}) <= 2, false, [](bool x, bool y) {
         return x or y;
