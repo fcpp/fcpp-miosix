@@ -83,6 +83,12 @@ struct infected {};
 struct positives {};
 //! @}
 
+FUN(T) T fix_after(ARGS, T value, times_t t) { CODE
+    return old(node, 0, value, [&](T o){
+        return node.current_time() < t ? value : o;
+    });
+}
+
 //! @brief Computes the maximum ever appeared in the network for a given value.
 FUN(T) T max_ever(ARGS, T value) { CODE
     return nbr(node, 0, value, [&](field<T> neigh_vals){
@@ -102,15 +108,14 @@ FUN() void topology_recording(ARGS) { CODE
     using map_t = std::unordered_map<device_t,times_t>;
     field<device_t> nbr_uids = nbr_uid(node, 0);
     node.storage(uid_list{}) = nbr_uids;
-    map_t nbr_counters = old(node, 1, map_t{}, [&](map_t n){
-        if (node.current_time() < RECORD_TIME)
-            fold_hood(node, 2, [&](device_t i, int){
-                if (n.count(i) == 0) n[i] = 0;
-                n[i] += 1;
-                return 0;
-            }, nbr_uids, 0);
+    map_t nbr_counters = fix_after(node, 1, old(node, 2, map_t{}, [&](map_t n){
+        fold_hood(node, 3, [&](device_t i, int){
+            if (n.count(i) == 0) n[i] = 0;
+            n[i] += 1;
+            return 0;
+        }, nbr_uids, 0);
         return n;
-    });
+    }), RECORD_TIME);
     node.storage(nbr_counts{}) = nbr_counters;
     if (node.current_time() < RECORD_TIME) {
         node.storage(nbr_list{}) = {};
@@ -122,12 +127,12 @@ FUN() void topology_recording(ARGS) { CODE
 
 //! @brief Computes whether there is a node with only one connected neighbour at a given time.
 FUN() void vulnerability_detection(ARGS, int diameter) { CODE
-    node.storage(min_uid{}) = coordination::diameter_election_debug(node, 0, diameter);
-    node.storage(hop_dist{}) = coordination::abf_hops(node, 1, node.uid == node.storage(min_uid{}));
-    bool collect_weak = coordination::sp_collection(node, 2, node.storage(hop_dist{}), node.storage(neigh_count{}) <= 2, false, [](bool x, bool y) {
+    node.storage(min_uid{}) = fix_after(node, 0, coordination::diameter_election_debug(node, 1, diameter), RECORD_TIME);
+    node.storage(hop_dist{}) = fix_after(node, 2, coordination::abf_hops(node, 3, node.uid == node.storage(min_uid{})), RECORD_TIME);
+    bool collect_weak = coordination::sp_collection(node, 4, node.storage(hop_dist{}), node.storage(neigh_count{}) <= 2, false, [](bool x, bool y) {
         return x or y;
     });
-    node.storage(some_weak{}) = coordination::broadcast(node, 3, node.storage(hop_dist{}), collect_weak);
+    node.storage(some_weak{}) = fix_after(node, 5, coordination::broadcast(node, 6, node.storage(hop_dist{}), collect_weak), RECORD_TIME);
 }
 
 //! @brief Computes whether the current node got in contact with a positive node within a time window.
