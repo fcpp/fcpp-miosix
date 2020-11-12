@@ -1,5 +1,8 @@
 // Copyright © 2020 Giorgio Audrito. All Rights Reserved.
 
+#include <iostream>
+#include <sstream>
+
 #include "miosix.h"
 #include "lib/fcpp.hpp"
 #include "driver.hpp"
@@ -190,7 +193,7 @@ MAIN(case_study,);
 DECLARE_OPTIONS(opt,
     program<main>,
     retain<metric::retain<5, 1>>, // messages are thrown away after 5/1 secs
-    round_schedule<sequence::periodic_n<1, 1, 1>>, // rounds are happening every 1 secs (den, start, period)
+    round_schedule<sequence::periodic_n<1, 1, 1, RECORD_TIME>>, // rounds are happening every 1 secs (den, start, period, end)
     exports< // types that may appear in messages
         bool, hops_t, device_t, uint8_t, uint16_t, tuple<device_t, hops_t>,
         std::unordered_map<device_t, times_t>
@@ -216,7 +219,10 @@ DECLARE_OPTIONS(opt,
 
 //! @brief Main function starting FCPP.
 int main() {
-    component::deployment<opt>::net network{common::make_tagged_tuple<hoodsize>(device_t{DEGREE})};
+    ostringstream oss;
+    component::deployment<opt>::net network{common::make_tagged_tuple<hoodsize, output>(device_t{DEGREE}, oss)};
     network.run();
+    while (miosix::userButton::value() == 1) {}
+    std::cout << oss.str() << std::endl;
     return 0;
 }
