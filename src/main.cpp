@@ -18,7 +18,7 @@
 #define NONE                    3333
 
 #ifndef CASE_STUDY
-#define CASE_STUDY NONE
+#define CASE_STUDY CONTACT_TRACING
 #endif
 
 using namespace miosix;
