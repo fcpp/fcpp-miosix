@@ -35,12 +35,14 @@ uint16_t getMaxHeapUsed() {
 struct nbr_counts {};
 struct uid_list {};
 struct elect_debug {};
+struct nbr_elect {};
 //! @brief Finds the minimum value, knowing an upper bound to the network diameter.
 template <typename node_t, typename T>
 T diameter_election_debug(node_t& node, trace_t call_point, const T& value, hops_t diameter) {
     internal::trace_call trace_caller(node.stack_trace, call_point);
 
     return get<0>(nbr(node, 0, make_tuple(value, hops_t{0}), [&](field<tuple<T,hops_t>> x){
+        node.storage(nbr_elect{}) = x;
         tuple<T,hops_t> best = fold_hood(node, 0, [&](tuple<T,hops_t> const& a, tuple<T,hops_t> const& b){
             return get<1>(a) < diameter and a < b ? a : b;
         }, x, make_tuple(value, hops_t{0}));
@@ -200,6 +202,7 @@ DECLARE_OPTIONS(opt,
         max_msg,    uint8_t,
         infected,   bool,
         positives,  std::unordered_map<device_t, times_t>,
+        nbr_elect,  field<tuple<device_t,hops_t>>,
         elect_debug,tuple<device_t,hops_t>,
         uid_list,   field<device_t>,
         nbr_counts, std::unordered_map<device_t, times_t>,
