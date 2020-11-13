@@ -35,32 +35,6 @@ uint16_t getMaxHeapUsed() {
     return (MemoryProfiling::getHeapSize() - MemoryProfiling::getAbsoluteFreeHeap()) / 2;
 }
 
-// DEBUG STORAGE TAGS
-struct nbr_counts {};
-struct uid_list {};
-struct elect_debug {};
-struct nbr_elect {};
-//! @brief Finds the minimum value, knowing an upper bound to the network diameter.
-template <typename node_t, typename T>
-T diameter_election_debug(node_t& node, trace_t call_point, const T& value, hops_t diameter) {
-    internal::trace_call trace_caller(node.stack_trace, call_point);
-
-    return get<0>(nbr(node, 0, make_tuple(value, hops_t{0}), [&](field<tuple<T,hops_t>> x){
-        node.storage(nbr_elect{}) = x;
-        tuple<T,hops_t> best = fold_hood(node, 0, [&](tuple<T,hops_t> const& a, tuple<T,hops_t> const& b){
-            return get<1>(a) < diameter and a < b ? a : b;
-        }, x, make_tuple(value, hops_t{0}));
-        get<1>(best) += 1;
-        return node.storage(elect_debug{}) = min(best, make_tuple(value, hops_t{0}));
-    }));
-}
-
-//! @brief Finds the minimum UID, knowing an upper bound to the network diameter.
-template <typename node_t>
-inline device_t diameter_election_debug(node_t& node, trace_t call_point, int diameter) {
-    return diameter_election_debug(node, call_point, node.uid, diameter);
-}
-
 //! @brief Storage tags
 //! @{
 //! @brief Total round count since start.
@@ -111,31 +85,27 @@ FUN() void resource_tracking(ARGS) { CODE
 FUN() void topology_recording(ARGS) { CODE
     using map_t = std::unordered_map<device_t,times_t>;
     field<device_t> nbr_uids = nbr_uid(node, 0);
-    node.storage(uid_list{}) = nbr_uids;
-    map_t nbr_counters = fix_after(node, 1, old(node, 2, map_t{}, [&](map_t n){
-        fold_hood(node, 3, [&](device_t i, int){
+    map_t nbr_counters = old(node, 1, map_t{}, [&](map_t n){
+        fold_hood(node, 2, [&](device_t i, int){
             n[i] += 1;
             return 0;
         }, nbr_uids, 0);
         return n;
-    }), RECORD_TIME);
-    node.storage(nbr_counts{}) = nbr_counters;
-    if (node.current_time() < RECORD_TIME) {
-        node.storage(nbr_list{}).clear();
-        for (const auto& it : nbr_counters)
-            if (it.second >= node.storage(round_count{})/2)
-                node.storage(nbr_list{}).insert(it.first);
-    }
+    });
+    node.storage(nbr_list{}).clear();
+    for (const auto& it : nbr_counters)
+        if (it.second >= node.storage(round_count{})/2)
+            node.storage(nbr_list{}).insert(it.first);
 }
 
 //! @brief Computes whether there is a node with only one connected neighbour at a given time.
 FUN() void vulnerability_detection(ARGS, int diameter) { CODE
-    node.storage(min_uid{}) = fix_after(node, 0, diameter_election_debug(node, 1, diameter), RECORD_TIME);
-    node.storage(hop_dist{}) = fix_after(node, 2, coordination::abf_hops(node, 3, node.uid == node.storage(min_uid{})), RECORD_TIME);
-    bool collect_weak = coordination::sp_collection(node, 4, node.storage(hop_dist{}), node.storage(neigh_count{}) <= 2, false, [](bool x, bool y) {
+    node.storage(min_uid{}) = coordination::diameter_election(node, 0, diameter);
+    node.storage(hop_dist{}) = coordination::abf_hops(node, 1, node.uid == node.storage(min_uid{}));
+    bool collect_weak = coordination::sp_collection(node, 2, node.storage(hop_dist{}), node.storage(neigh_count{}) <= 2, false, [](bool x, bool y) {
         return x or y;
     });
-    node.storage(some_weak{}) = fix_after(node, 5, coordination::broadcast(node, 6, node.storage(hop_dist{}), collect_weak), RECORD_TIME);
+    node.storage(some_weak{}) = coordination::broadcast(node, 3, node.storage(hop_dist{}), collect_weak);
 }
 
 //! @brief Computes whether the current node got in contact with a positive node within a time window.
@@ -180,7 +150,7 @@ FUN() void case_study(ARGS) { CODE
 #if CASE_STUDY == VULNERABILITY_DETECTION
     vulnerability_detection(node, 2, DIAMETER);
 #elif CASE_STUDY == CONTACT_TRACING
-    contact_tracing(node, 3, WINDOW_TIME, false); //TODO: change "false" with something that works
+    contact_tracing(node, 3, WINDOW_TIME, miosix::userButton::value() == 0);
 #endif
     resource_tracking(node, 4);
     topology_recording(node, 5);
@@ -210,10 +180,6 @@ DECLARE_OPTIONS(opt,
         max_msg,    uint8_t,
         infected,   bool,
         positives,  std::unordered_map<device_t, times_t>,
-        nbr_elect,  field<tuple<device_t,hops_t>>,
-        elect_debug,tuple<device_t,hops_t>,
-        uid_list,   field<device_t>,
-        nbr_counts, std::unordered_map<device_t, times_t>,
         nbr_list,   std::unordered_set<device_t>
     >
 );
