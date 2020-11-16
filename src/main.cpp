@@ -1,7 +1,7 @@
 // Copyright © 2020 Giorgio Audrito. All Rights Reserved.
 
 #include <iostream>
-#include <sstream>
+#include "streamlogger.h"
 
 #include "miosix.h"
 #include "lib/fcpp.hpp"
@@ -220,10 +220,17 @@ DECLARE_OPTIONS(opt,
 
 //! @brief Main function starting FCPP.
 int main() {
-    ostringstream oss;
-    component::deployment<opt>::net network{common::make_tagged_tuple<hoodsize, output>(device_t{DEGREE}, oss)};
+    LogStreambuf log(64*1024);
+    std::ostream os(&log);
+    component::deployment<opt>::net network{common::make_tagged_tuple<hoodsize, output>(device_t{DEGREE}, os)};
     network.run();
-    while (miosix::userButton::value() == 1) {}
-    std::cout << oss.str() << std::endl;
+
+    os.flush();
+    for(;;)
+    {
+        std::cout << "----" << std::endl;
+        while (miosix::userButton::value() == 1) {}
+        log.dump();
+    }
     return 0;
 }
