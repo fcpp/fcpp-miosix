@@ -222,7 +222,7 @@ DECLARE_OPTIONS(opt,
 int main() {
     LogStreambuf log(64*1024);
     std::ostream os(&log);
-    component::deployment<opt>::net network{common::make_tagged_tuple<hoodsize, output>(device_t{DEGREE}, os)};
+    component::deployment<opt>::net network{common::make_tagged_tuple<hoodsize, output>(device_t{DEGREE}, &os)};
     network.run();
 
     os.flush();
