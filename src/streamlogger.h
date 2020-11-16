@@ -33,11 +33,11 @@
 class LogStreambuf : public std::streambuf
 {
 public:
-    explicit LogStreambuf(int size) : size(size) { log.reserve(size); }
+    explicit LogStreambuf(int capacity) : capacity(capacity) { log.reserve(capacity); }
     
     void dump();
     
-    size_t size() const { return log.size(); }
+    int size() const { return log.size(); }
     
 protected:
 
@@ -47,5 +47,5 @@ protected:
     
 private:
     std::string log;
-    int size;
+    int capacity;
 };

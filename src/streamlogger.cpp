@@ -39,7 +39,7 @@ void LogStreambuf::dump()
 streamsize LogStreambuf::xsputn(const char *s, streamsize n)
 {
     cout.write(s, n);
-    auto loggable = min<streamsize>(n, size - log.size());
+    auto loggable = min<streamsize>(n, capacity - size());
     log.append(s, loggable);
     return n; //Even if the log is full don't report error
 }
@@ -50,7 +50,7 @@ int LogStreambuf::overflow(int c)
     {
         char cc = static_cast<char>(c);
         cout.write(&cc, 1);
-        if(log.size() < size) log.append(&cc, 1);
+        if(size() < capacity) log.append(&cc, 1);
     }
     return c;
 }
