@@ -37,6 +37,8 @@ public:
     
     void dump();
     
+    size_t size() const { return log.size(); }
+    
 protected:
 
     std::streamsize xsputn(const char *s, std::streamsize n) override;

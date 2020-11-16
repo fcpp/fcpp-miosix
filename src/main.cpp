@@ -220,7 +220,7 @@ DECLARE_OPTIONS(opt,
 
 //! @brief Main function starting FCPP.
 int main() {
-    LogStreambuf log(64*1024);
+    LogStreambuf log(80*1024);
     std::ostream os(&log);
     component::deployment<opt>::net network{common::make_tagged_tuple<hoodsize, output>(device_t{DEGREE}, &os)};
     network.run();
@@ -228,8 +228,8 @@ int main() {
     os.flush();
     for(;;)
     {
-        std::cout << "----" << std::endl;
         while (miosix::userButton::value() == 1) {}
+        std::cout << "----" << std::endl << "log size " << log.size() << std::endl;
         log.dump();
     }
     return 0;
