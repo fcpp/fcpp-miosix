@@ -9,7 +9,7 @@
 
 #define DEGREE      10  // maximum degree allowed for a deployment
 #define DIAMETER    10  // maximum diameter in hops for a deployment
-#define RECORD_TIME 300 // time in seconds during which the network topology is recorded
+#define RECORD_TIME 300 // time in seconds during which the aggregate program is run and recorded
 #define WINDOW_TIME 60  // time in seconds during which positive node information is retained
 #define ROUND_PERIOD 1  // time in seconds between transmission rounds
 
@@ -39,6 +39,8 @@ uint16_t getMaxHeapUsed() {
 //! @{
 //! @brief Total round count since start.
 struct round_count {};
+//! @brief A shared global clock.
+struct global_clock {};
 //! @brief Current count of neighbours.
 struct neigh_count {};
 //! @brief Minimum UID in the network.
@@ -53,7 +55,7 @@ struct max_stack {};
 struct max_heap {};
 //! @brief Maximum message size ever experienced.
 struct max_msg {};
-//! @brief List of neighbours encountered during RECORD_TIME.
+//! @brief List of neighbours encountered at least 50% of the times.
 struct nbr_list {};
 //! @brief Whether the device has been infected.
 struct infected {};
@@ -61,24 +63,18 @@ struct infected {};
 struct positives {};
 //! @}
 
+//! @brief Does not change a value after a given time.
 FUN(T) T fix_after(ARGS, T value, times_t t) { CODE
     return old(node, 0, value, [&](T o){
         return node.current_time() < t ? value : o;
     });
 }
 
-//! @brief Computes the maximum ever appeared in the network for a given value.
-FUN(T) T max_ever(ARGS, T value) { CODE
-    return nbr(node, 0, value, [&](field<T> neigh_vals){
-        return max(coordination::max_hood(node, 1, neigh_vals), value);
-    });
-}
-
 //! @brief Tracks the maximum consumption of memory and message resources.
 FUN() void resource_tracking(ARGS) { CODE
-    node.storage(max_stack{}) = max_ever(node, 0, getMaxStackUsed());
-    node.storage(max_heap{}) = uint32_t{2} * max_ever(node, 1, getMaxHeapUsed());
-    node.storage(max_msg{}) = max_ever(node, 2, (uint8_t)min(node.msg_size(), size_t{255}));
+    node.storage(max_stack{}) = coordination::gossip_max(node, 0, getMaxStackUsed());
+    node.storage(max_heap{}) = uint32_t{2} * coordination::gossip_max(node, 1, getMaxHeapUsed());
+    node.storage(max_msg{}) = coordination::gossip_max(node, 2, (int8_t)min(node.msg_size(), size_t{127}));
 }
 
 //! @brief Records the set of neighbours ever connected before RECORD_TIME.
@@ -100,12 +96,11 @@ FUN() void topology_recording(ARGS) { CODE
 
 //! @brief Computes whether there is a node with only one connected neighbour at a given time.
 FUN() void vulnerability_detection(ARGS, int diameter) { CODE
-    node.storage(min_uid{}) = coordination::diameter_election(node, 0, diameter);
-    node.storage(hop_dist{}) = coordination::abf_hops(node, 1, node.uid == node.storage(min_uid{}));
-    bool collect_weak = coordination::sp_collection(node, 2, node.storage(hop_dist{}), node.storage(neigh_count{}) <= 2, false, [](bool x, bool y) {
+    tie(node.storage(min_uid{}), node.storage(hop_dist{})) = coordination::diameter_election_distance(node, 0, diameter);
+    bool collect_weak = coordination::sp_collection(node, 1, node.storage(hop_dist{}), node.storage(neigh_count{}) <= 2, false, [](bool x, bool y) {
         return x or y;
     });
-    node.storage(some_weak{}) = coordination::broadcast(node, 3, node.storage(hop_dist{}), collect_weak);
+    node.storage(some_weak{}) = coordination::broadcast(node, 2, node.storage(hop_dist{}), collect_weak);
 }
 
 //! @brief Computes whether the current node got in contact with a positive node within a time window.
@@ -146,14 +141,15 @@ FUN() void contact_tracing(ARGS, times_t window, bool positive) { CODE
 //! @brief Main aggregate function.
 FUN() void case_study(ARGS) { CODE
     node.storage(round_count{}) = coordination::counter(node, 0, hops_t{1});
-    node.storage(neigh_count{}) = count_hood(node, 1);
+    node.storage(global_clock{}) = coordination::shared_clock(node, 1);
+    node.storage(neigh_count{}) = count_hood(node, 2);
 #if CASE_STUDY == VULNERABILITY_DETECTION
-    vulnerability_detection(node, 2, DIAMETER);
+    vulnerability_detection(node, 3, DIAMETER);
 #elif CASE_STUDY == CONTACT_TRACING
-    contact_tracing(node, 3, WINDOW_TIME, miosix::userButton::value() == 0);
+    contact_tracing(node, 4, WINDOW_TIME, miosix::userButton::value() == 0);
 #endif
-    resource_tracking(node, 4);
-    topology_recording(node, 5);
+    resource_tracking(node, 5);
+    topology_recording(node, 6);
 }
 
 
@@ -166,21 +162,22 @@ DECLARE_OPTIONS(opt,
     retain<metric::retain<5, 1>>, // messages are thrown away after 5/1 secs
     round_schedule<sequence::periodic_n<1, ROUND_PERIOD, ROUND_PERIOD, RECORD_TIME>>, // rounds are happening every 1 secs (den, start, period, end)
     exports< // types that may appear in messages
-        bool, hops_t, device_t, uint8_t, uint16_t, tuple<device_t, hops_t>,
+        bool, hops_t, device_t, int8_t, uint16_t, times_t, tuple<device_t, hops_t>,
         std::unordered_map<device_t, times_t>
     >,
     tuple_store< // tag/type that can appear in node.storage(tag{}) = type{}, are printed in output
-        round_count,int,
-        neigh_count,int,
-        min_uid,    device_t,
-        hop_dist,   hops_t,
-        some_weak,  bool,
-        max_stack,  uint16_t,
-        max_heap,   uint32_t,
-        max_msg,    uint8_t,
-        infected,   bool,
-        positives,  std::unordered_map<device_t, times_t>,
-        nbr_list,   std::unordered_set<device_t>
+        round_count,    int,
+        global_clock,   times_t,
+        neigh_count,    int,
+        min_uid,        device_t,
+        hop_dist,       hops_t,
+        some_weak,      bool,
+        max_stack,      uint16_t,
+        max_heap,       uint32_t,
+        max_msg,        int8_t,
+        infected,       bool,
+        positives,      std::unordered_map<device_t, times_t>,
+        nbr_list,       std::unordered_set<device_t>
     >
 );
 
@@ -192,9 +189,8 @@ int main() {
     network.run();
 
     os.flush();
-    for(;;)
-    {
-        while (miosix::userButton::value() == 1) {}
+    while (true) {
+        while (miosix::userButton::value() == 1);
         std::cout << "----" << std::endl << "log size " << log.size() << std::endl;
         log.dump();
     }
