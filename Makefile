@@ -73,6 +73,7 @@ fcpp/src/lib/beautify.cpp                           \
 fcpp/src/lib/fcpp.cpp                               \
 fcpp/src/lib/settings.cpp                           \
 src/driver.cpp                                      \
+src/streamlogger.cpp                                \
 src/main.cpp
 
 ##
