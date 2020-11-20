@@ -25,7 +25,7 @@
  *   along with this program; if not, see <http://www.gnu.org/licenses/>   *
  ***************************************************************************/
 
-#include "streamlogger.h"
+#include "streamlogger.hpp"
 #include <iostream>
 #include <algorithm>
 

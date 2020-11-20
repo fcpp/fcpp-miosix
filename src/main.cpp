@@ -1,17 +1,16 @@
 // Copyright © 2020 Giorgio Audrito. All Rights Reserved.
 
 #include <iostream>
-#include "streamlogger.h"
 
 #include "miosix.h"
 #include "lib/fcpp.hpp"
 #include "driver.hpp"
 
-#define DEGREE      10  // maximum degree allowed for a deployment
-#define DIAMETER    10  // maximum diameter in hops for a deployment
-#define RECORD_TIME 300 // time in seconds during which the aggregate program is run and recorded
-#define WINDOW_TIME 60  // time in seconds during which positive node information is retained
-#define ROUND_PERIOD 1  // time in seconds between transmission rounds
+#define DEGREE       10  // maximum degree allowed for a deployment
+#define DIAMETER     10  // maximum diameter in hops for a deployment
+#define WINDOW_TIME  60  // time in seconds during which positive node information is retained
+#define ROUND_PERIOD 1   // time in seconds between transmission rounds
+#define BUFFER_SIZE  80  // size in KB to be used for buffering the output
 
 #define VULNERABILITY_DETECTION 1111
 #define CONTACT_TRACING         2222
@@ -32,7 +31,7 @@ uint16_t getMaxStackUsed() {
 
 //! @brief \return the maximum heap used by the node (divided by 2 to fit in a short)
 uint16_t getMaxHeapUsed() {
-    return (MemoryProfiling::getHeapSize() - MemoryProfiling::getAbsoluteFreeHeap()) / 2;
+    return (MemoryProfiling::getHeapSize() - MemoryProfiling::getAbsoluteFreeHeap() - BUFFER_SIZE*1024) / 2;
 }
 
 //! @brief Storage tags
@@ -43,6 +42,8 @@ struct round_count {};
 struct global_clock {};
 //! @brief Current count of neighbours.
 struct neigh_count {};
+//! @brief Current count of neighbours from which I received a packet now.
+struct neigh_now {};
 //! @brief Minimum UID in the network.
 struct min_uid {};
 //! @brief Distance in hops to the device with minimum UID.
@@ -77,7 +78,7 @@ FUN() void resource_tracking(ARGS) { CODE
     node.storage(max_msg{}) = coordination::gossip_max(node, 2, (int8_t)min(node.msg_size(), size_t{127}));
 }
 
-//! @brief Records the set of neighbours ever connected before RECORD_TIME.
+//! @brief Records the set of neighbours connected at least 50% of the time.
 FUN() void topology_recording(ARGS) { CODE
     using map_t = std::unordered_map<device_t,times_t>;
     field<device_t> nbr_uids = nbr_uid(node, 0);
@@ -143,6 +144,7 @@ FUN() void case_study(ARGS) { CODE
     node.storage(round_count{}) = coordination::counter(node, 0, hops_t{1});
     node.storage(global_clock{}) = coordination::shared_clock(node, 1);
     node.storage(neigh_count{}) = count_hood(node, 2);
+    node.storage(neigh_now{}) = coordination::sum_hood(node, 2, node.message_time() > node.previous_time(), 0);
 #if CASE_STUDY == VULNERABILITY_DETECTION
     vulnerability_detection(node, 3, DIAMETER);
 #elif CASE_STUDY == CONTACT_TRACING
@@ -150,17 +152,45 @@ FUN() void case_study(ARGS) { CODE
 #endif
     resource_tracking(node, 5);
     topology_recording(node, 6);
+    if (miosix::userButton::value() == 0) node.terminate();
 }
 
 
-//! @brief Main struct calling `test_program`.
+//! @brief Main struct calling `case_study`.
 MAIN(case_study,);
+
+using rows_type = plot::rows<
+    tuple_store<
+        neigh_count,    int,
+#if CASE_STUDY == VULNERABILITY_DETECTION
+        min_uid,        device_t,
+        hop_dist,       hops_t,
+        some_weak,      bool,
+#endif
+        max_stack,      uint16_t,
+        max_heap,       uint32_t,
+        max_msg,        int8_t,
+#if CASE_STUDY == CONTACT_TRACING
+        infected,       bool,
+        positives,      std::unordered_map<device_t, times_t>,
+#endif
+        nbr_list,       std::unordered_set<device_t>
+    >,
+    tuple_store<
+        plot::time, times_t,
+        round_count,    int,
+        global_clock,   times_t,
+        neigh_now,      int
+    >,
+    void,
+    BUFFER_SIZE*1024
+>;
 
 //! @brief FCPP setup.
 DECLARE_OPTIONS(opt,
     program<main>,
     retain<metric::retain<5, 1>>, // messages are thrown away after 5/1 secs
-    round_schedule<sequence::periodic_n<1, ROUND_PERIOD, ROUND_PERIOD, RECORD_TIME>>, // rounds are happening every 1 secs (den, start, period, end)
+    round_schedule<sequence::periodic_n<1, ROUND_PERIOD, ROUND_PERIOD>>, // rounds are happening every 1 secs (den, start, period)
     exports< // types that may appear in messages
         bool, hops_t, device_t, int8_t, uint16_t, times_t, tuple<device_t, hops_t>,
         std::unordered_map<device_t, times_t>
@@ -168,6 +198,7 @@ DECLARE_OPTIONS(opt,
     tuple_store< // tag/type that can appear in node.storage(tag{}) = type{}, are printed in output
         round_count,    int,
         global_clock,   times_t,
+        neigh_now,      int,
         neigh_count,    int,
         min_uid,        device_t,
         hop_dist,       hops_t,
@@ -178,21 +209,20 @@ DECLARE_OPTIONS(opt,
         infected,       bool,
         positives,      std::unordered_map<device_t, times_t>,
         nbr_list,       std::unordered_set<device_t>
-    >
+    >,
+    plot_type<rows_type>
 );
 
 //! @brief Main function starting FCPP.
 int main() {
-    LogStreambuf log(80*1024);
-    std::ostream os(&log);
-    component::deployment<opt>::net network{common::make_tagged_tuple<hoodsize, output>(device_t{DEGREE}, &os)};
+    rows_type row_store;
+    component::deployment<opt>::net network{common::make_tagged_tuple<hoodsize, plotter>(device_t{DEGREE}, &row_store)};
     network.run();
 
-    os.flush();
     while (true) {
+        std::cout << "----" << std::endl << "log size " << row_store.byte_size() << std::endl;
+        row_store.print(std::cout);
         while (miosix::userButton::value() == 1);
-        std::cout << "----" << std::endl << "log size " << log.size() << std::endl;
-        log.dump();
     }
     return 0;
 }
