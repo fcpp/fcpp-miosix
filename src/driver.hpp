@@ -138,7 +138,7 @@ struct transceiver {
                 m.content.resize(result.size - sizeof(device_t));
                 activity();
                 #ifdef DBG_PRINT_SUCCESSFUL_CALLS
-                printf("Received %d byte packet\n", result.size);
+                printf("Received %d byte packet from device %d at time %f\n", result.size, m.device, m.time);
                 #endif //DBG_PRINT_SUCCESSFUL_CALLS
             } else {
                 switch (result.error) {

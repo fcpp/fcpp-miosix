@@ -64,6 +64,12 @@ struct nbr_list {};
 struct infected {};
 //! @brief The list of positive devices in the network.
 struct positives {};
+//! @brief Timestamps of received messages.
+struct dbg_msg_time {};
+//! @brief Current time.
+struct dbg_cur_time {};
+//! @brief Previous time.
+struct dbg_prev_time {};
 //! @}
 
 //! @brief Does not change a value after a given time.
@@ -154,6 +160,10 @@ FUN() void contact_tracing(ARGS, times_t window, bool positive) { CODE
 
 //! @brief Main aggregate function.
 FUN() void case_study(ARGS) { CODE
+    node.storage(dbg_cur_time{}) = node.current_time();
+    node.storage(dbg_prev_time{}) = node.previous_time();
+    node.storage(dbg_msg_time{}) = node.message_time();
+
     node.storage(round_count{}) = coordination::counter(node, 0, uint16_t{1});
     node.storage(global_clock{}) = coordination::shared_clock(node, 1);
     node.storage(neigh_count{}) = count_hood(node, 2);
@@ -224,6 +234,9 @@ DECLARE_OPTIONS(opt,
         max_msg,        int8_t,
         infected,       bool,
         positives,      std::unordered_map<device_t, times_t>,
+        dbg_cur_time,   times_t,
+        dbg_prev_time,  times_t,
+        dbg_msg_time,   field<times_t>,
         nbr_list,       std::unordered_set<device_t>
     >,
     plot_type<rows_type>
