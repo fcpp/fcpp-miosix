@@ -244,6 +244,7 @@ DECLARE_OPTIONS(opt,
 
 //! @brief Main function starting FCPP.
 int main() {
+    std::cout << common::type_name<times_t>() << std::endl;
     rows_type row_store;
     component::deployment<opt>::net network{common::make_tagged_tuple<hoodsize, plotter>(device_t{DEGREE}, &row_store)};
     network.run();
