@@ -132,7 +132,7 @@ struct transceiver {
         try {
             auto result = m_transceiver.recv(m.content.data(), 125, m_timer.getValue() + interval);
             if (result.error == miosix::RecvResult::OK and result.size >= (int)sizeof(device_t)) {
-                m.time = (std::chrono::high_resolution_clock::now() - m_start).count() * std::chrono::high_resolution_clock::period::num * 1.0 / std::chrono::high_resolution_clock::period::den;
+                m.time = (std::chrono::high_resolution_clock::now() - m_start).count() * std::chrono::high_resolution_clock::period::num * 1.0f / std::chrono::high_resolution_clock::period::den;
                 m.power = result.rssi; // TODO: convert in meters
                 m.device = *reinterpret_cast<device_t*>(m.content.data() + result.size - sizeof(device_t));
                 m.content.resize(result.size - sizeof(device_t));
