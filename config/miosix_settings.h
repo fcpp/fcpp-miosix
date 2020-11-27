@@ -161,7 +161,7 @@ const unsigned int STACK_IDLE=256;
 /// Default stack size for pthread_create.
 /// The chosen value is enough to call C standard library functions
 /// such as printf/fopen which are stack-heavy
-const unsigned int STACK_DEFAULT_FOR_PTHREAD=2048;
+const unsigned int STACK_DEFAULT_FOR_PTHREAD=8192;
 
 /// Maximum size of the RAM image of a process. If a program requires more
 /// the kernel will not run it (MUST be divisible by 4)
