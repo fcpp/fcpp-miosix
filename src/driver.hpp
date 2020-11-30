@@ -20,6 +20,7 @@
 #include <vector>
 
 #include "lib/settings.hpp"
+#include "lib/component/base.hpp"
 #include "lib/deployment/os.hpp"
 
 #include "miosix.h"
@@ -86,7 +87,7 @@ struct transceiver {
     data_type data;
 
     //! @brief Constructor with settings.
-    transceiver(data_type d) : data(d), m_transceiver(miosix::Transceiver::instance()), m_timer(miosix::getTransceiverTimer()), m_start(std::chrono::high_resolution_clock::now()), m_rng(std::chrono::system_clock::now().time_since_epoch().count()) {
+    transceiver(data_type d) : data(d), m_transceiver(miosix::Transceiver::instance()), m_timer(miosix::getTransceiverTimer()), m_fcpp_timer(common::make_tagged_tuple<>()), m_rng(std::chrono::system_clock::now().time_since_epoch().count()) {
         miosix::TransceiverConfiguration config(
             data.frequency,
             data.power,
@@ -132,7 +133,7 @@ struct transceiver {
         try {
             auto result = m_transceiver.recv(m.content.data(), 125, m_timer.getValue() + interval);
             if (result.error == miosix::RecvResult::OK and result.size >= (int)sizeof(device_t)) {
-                m.time = (std::chrono::high_resolution_clock::now() - m_start).count() * std::chrono::high_resolution_clock::period::num * 1.0f / std::chrono::high_resolution_clock::period::den;
+                m.time = m_fcpp_timer.real_time();
                 m.power = result.rssi; // TODO: convert in meters
                 m.device = *reinterpret_cast<device_t*>(m.content.data() + result.size - sizeof(device_t));
                 m.content.resize(result.size - sizeof(device_t));
@@ -161,8 +162,8 @@ struct transceiver {
     miosix::Transceiver& m_transceiver;
     //! @brief The miosix transceiver timer.
     miosix::HardwareTimer& m_timer;
-    //! @brief The time of program start.
-    std::chrono::high_resolution_clock::time_point m_start;
+    //! @brief An empty net object for accessing real time.
+    component::combine<>::component<>::net m_fcpp_timer;
     //! @brief A random engine.
     mutable std::default_random_engine m_rng;
 };

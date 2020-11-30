@@ -42,6 +42,7 @@ fcpp/src/lib/coordination/collection.cpp            \
 fcpp/src/lib/coordination/election.cpp              \
 fcpp/src/lib/coordination/geometry.cpp              \
 fcpp/src/lib/coordination/spreading.cpp             \
+fcpp/src/lib/coordination/time.cpp                  \
 fcpp/src/lib/coordination/utils.cpp                 \
 fcpp/src/lib/coordination.cpp                       \
 fcpp/src/lib/data/field.cpp                         \
@@ -85,7 +86,7 @@ LIBS :=
 ## List here additional include directories (in the form -Iinclude_dir)
 ##
 INCLUDE_DIRS :=							\
--Ifcpp/src -DFCPP_SYSTEM=FCPP_SYSTEM_EMBEDDED -DFCPP_ENVIRONMENT=FCPP_ENVIRONMENT_PHYSICAL
+-Ifcpp/src -DFCPP_SYSTEM=FCPP_SYSTEM_EMBEDDED -DFCPP_ENVIRONMENT=FCPP_ENVIRONMENT_PHYSICAL -DFCPP_WARNING_TRACE=false
 
 ##############################################################################
 ## You should not need to modify anything below                             ##
