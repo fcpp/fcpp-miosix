@@ -45,6 +45,14 @@ void activity()
 void activity() {}    
 #endif
 
+const char transceiver::panHeader[transceiver::panHeaderSize] = {
+    0x41, //frame type 0b001 (data), intra pan
+    0x08, //no source addressing, short destination addressing
+    0x00, //seq no
+    0xaa, 0xbb, //pan ID (hardcoded)
+    0xff, 0xff, //destination addr (broadcast)
+};
+
 }
 
 }
