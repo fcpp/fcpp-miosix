@@ -23,6 +23,7 @@ fcpp/src/lib/common/algorithm.cpp                   \
 fcpp/src/lib/common/multitype_map.cpp               \
 fcpp/src/lib/common/mutex.cpp                       \
 fcpp/src/lib/common/ostream.cpp                     \
+fcpp/src/lib/common/plot.cpp                        \
 fcpp/src/lib/common/profiler.cpp                    \
 fcpp/src/lib/common/random_access_map.cpp           \
 fcpp/src/lib/common/serialize.cpp                   \

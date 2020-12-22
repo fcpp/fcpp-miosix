@@ -49,6 +49,8 @@ struct strongest_link {};
 struct nbr_list {};
 //! @brief Whether the device has been infected.
 struct infected {};
+//! @brief The list of contacts met in the last period of time.
+struct contacts {};
 //! @brief The list of positive devices in the network.
 struct positives {};
 //! @}
@@ -128,7 +130,7 @@ FUN() void vulnerability_detection(ARGS, int diameter) { CODE
 FUN() void contact_tracing(ARGS, times_t window) { CODE
     bool positive = coordination::toggle_filter(CALL, buttonPressed());
     using contact_t = std::unordered_map<device_t, times_t>;
-    contact_t contacts = old(CALL, contact_t{}, [&](contact_t c){
+    node.storage(contacts{}) = old(CALL, contact_t{}, [&](contact_t c){
         // discard old contacts
         for (auto it = c.begin(); it != c.end();) {
           if (node.current_time() - it->second > window)
@@ -154,9 +156,9 @@ FUN() void contact_tracing(ARGS, times_t window) { CODE
         }, np, 0);
         return p;
     });
-    node.storage(infected{}) = false;
+    node.storage(infected{}) = positive;
     for (auto c : node.storage(positives{}))
-        if (contacts.count(c.first))
+        if (node.storage(contacts{}).count(c.first))
             node.storage(infected{}) = true;
 }
 
@@ -188,6 +190,7 @@ using rows_type = plot::rows<
         some_weak,      bool,
 #elif CASE_STUDY == CONTACT_TRACING
         infected,       bool,
+        contacts,       std::unordered_map<device_t, times_t>,
         positives,      std::unordered_map<device_t, times_t>,
 #endif
         max_stack,      uint16_t,
@@ -221,6 +224,7 @@ DECLARE_OPTIONS(opt,
         hop_dist,       hops_t,
         some_weak,      bool,
         infected,       bool,
+        contacts,       std::unordered_map<device_t, times_t>,
         positives,      std::unordered_map<device_t, times_t>,
         max_stack,      uint16_t,
         max_heap,       uint32_t,
