@@ -127,6 +127,8 @@ FUN() void vulnerability_detection(ARGS, int diameter) { CODE
 //! @brief Computes whether the current node got in contact with a positive node within a time window.
 FUN() void contact_tracing(ARGS, times_t window) { CODE
     bool positive = coordination::toggle_filter(CALL, buttonPressed());
+    if(positive) miosix::redLed::high();
+    else miosix::redLed::low();
     using contact_t = std::unordered_map<device_t, times_t>;
     contact_t contacts = old(CALL, contact_t{}, [&](contact_t c){
         // discard old contacts
@@ -240,7 +242,7 @@ int main() {
     while (true) {
         std::cout << "----" << std::endl << "log size " << row_store.byte_size() << std::endl;
         row_store.print(std::cout);
-        while (not buttonPressed());
+        while (not buttonPressed()) sleep(1);
     }
     return 0;
 }
