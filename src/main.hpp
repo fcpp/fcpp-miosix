@@ -9,6 +9,7 @@
 #define ROUND_PERIOD 1   // time in seconds between transmission rounds
 #define BUFFER_SIZE  40  // size in KB to be used for buffering the output
 
+using fcpp::trace_t;
 
 // PURE C++ FUNCTIONS
 
@@ -19,7 +20,10 @@ inline uint16_t usedStack();
 inline uint16_t usedHeap();
 
 //! @brief Whether the button is currently pressed.
-inline bool buttonPressed();
+inline bool buttonPressed(fcpp::device_t, fcpp::times_t);
+
+//! @brief Handle for simulation code.
+FUN void simulation_handle(ARGS);
 
 
 /**
@@ -95,7 +99,7 @@ FUN void topology_recording(ARGS) { CODE
 
 //! @brief Checks whether to terminate the execution.
 FUN void termination_check(ARGS) { CODE
-    if (coordination::round_since(CALL, not buttonPressed()) >= PRESS_TIME) node.terminate();
+    if (coordination::round_since(CALL, not buttonPressed(node.uid, node.storage(global_clock{}))) >= PRESS_TIME) node.terminate();
 }
 
 
@@ -112,7 +116,7 @@ FUN void vulnerability_detection(ARGS, int diameter) { CODE
 
 //! @brief Computes whether the current node got in contact with a positive node within a time window.
 FUN void contact_tracing(ARGS, times_t window) { CODE
-    bool positive = coordination::toggle_filter(CALL, buttonPressed());
+    bool positive = coordination::toggle_filter(CALL, buttonPressed(node.uid, node.storage(global_clock{})));
     using contact_t = std::unordered_map<device_t, times_t>;
     node.storage(contacts{}) = old(CALL, contact_t{}, [&](contact_t c){
         // discard old contacts
@@ -161,6 +165,7 @@ MAIN() {
     resource_tracking(CALL);
     topology_recording(CALL);
     termination_check(CALL);
+    simulation_handle(CALL);
 }
 
 

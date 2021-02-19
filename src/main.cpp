@@ -40,9 +40,12 @@ inline uint16_t usedHeap() {
 }
 
 //! @brief Whether the button is currently pressed.
-inline bool buttonPressed() {
+inline bool buttonPressed(device_t, times_t) {
     return miosix::userButton::value() == 0;
 }
+
+//! @brief Handle for simulation code (empty).
+FUN void simulation_handle(ARGS) {}
 
 
 //! @brief Tag-type pairs to be stored for logging after execution end.
@@ -89,7 +92,7 @@ int main() {
     while (true) {
         std::cout << "----" << std::endl << "log size " << row_store.byte_size() << std::endl;
         row_store.print(std::cout);
-        while (not buttonPressed());
+        while (not buttonPressed(0,0));
     }
     return 0;
 }
