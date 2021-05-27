@@ -151,7 +151,7 @@ using net_type = component::interactive_simulator<
     message_size<true>,
     dimension<dim>,
     exports<vec<dim>, size_t>,
-    connector<connect::radial<12, 8, 1, dim>>,
+    connector<connect::radial<70, connect::fixed<12, 1, dim>>>,
     log_schedule<export_s>,
     spawn_schedule<spawn_s>,
     init<x, rectangle_d>,
