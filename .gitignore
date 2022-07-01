@@ -3,6 +3,9 @@
 #*
 .#*
 doc/
+bin/
+output/
+plot/
 .vagrant/
 
 # Exclude doxygen
