@@ -1,4 +1,4 @@
-// Copyright © 2020 Giorgio Audrito. All Rights Reserved.
+// Copyright © 2022 Giorgio Audrito. All Rights Reserved.
 
 #define VULNERABILITY_DETECTION 1111
 #define CONTACT_TRACING         2222
@@ -22,15 +22,17 @@
 #include "main.hpp"
 #include "driver.hpp"
 
-using namespace miosix;
-using namespace fcpp;
-using namespace component::tags;
 
+/**
+ * @brief Namespace containing all the objects in the FCPP library.
+ */
+namespace fcpp {
 
 // PURE C++ FUNCTIONS
 
 //! @brief The maximum stack used by the node starting from the boot
 inline uint16_t usedStack() {
+    using namespace miosix;
     return MemoryProfiling::getStackSize() - MemoryProfiling::getAbsoluteFreeStack();
 }
 
@@ -41,12 +43,21 @@ inline uint16_t usedHeap() {
 
 //! @brief Whether the button is currently pressed.
 inline bool buttonPressed(device_t, times_t) {
-    return miosix::userButton::value() == 0;
+    using namespace miosix;
+    return userButton::value() == 0;
 }
+
+
+//! @brief Namespace containing the libraries of coordination routines.
+namespace coordination {
 
 //! @brief Handle for simulation code (empty).
 FUN void simulation_handle(ARGS) {}
 
+}
+
+//! @brief Namespace for component options.
+namespace option {
 
 //! @brief Tag-type pairs to be stored for logging after execution end.
 using rows_type = plot::rows<
@@ -57,7 +68,7 @@ using rows_type = plot::rows<
         some_weak,      bool,
 #endif
 #ifdef RUN_CONTACT_TRACING
-        infected,       bool,
+        infected,       int8_t,
         contacts,       std::unordered_map<device_t, times_t>,
         positives,      std::unordered_map<device_t, times_t>,
 #endif
@@ -76,19 +87,32 @@ using rows_type = plot::rows<
     BUFFER_SIZE*1024
 >;
 
-//! @brief Type for the network object.
-using net_type = component::deployment<
-    options_type,
-    plot_type<rows_type>
->::net;
+//! @brief Main FCPP option setup.
+DECLARE_OPTIONS(deployment,
+    main,
+    plot_type<options::rows_type>
+);
+
+}
+
+}
 
 
 //! @brief Main function starting FCPP.
 int main() {
-    rows_type row_store;
-    net_type network(common::make_tagged_tuple<hoodsize, plotter>(device_t{DEGREE}, &row_store));
-    network.run();
+    using namespace fcpp;
 
+    // Type for the network object.
+    using net_t = component::deployment<options::deployment>::net;
+    // Create the logger object.
+    rows_type row_store;
+    // The initialisation values.
+    auto init_v = common::make_tagged_tuple<hoodsize, plotter>(device_t{DEGREE}, &row_store);
+    // Construct the network object.
+    net_t network{init_v};
+    // Run the program until exit.
+    network.run();
+    // Print the log until button release.
     while (true) {
         std::cout << "----" << std::endl << "log size " << row_store.byte_size() << std::endl;
         row_store.print(std::cout);
