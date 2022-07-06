@@ -77,7 +77,7 @@ FUN void resource_tracking(ARGS) { CODE
     node.storage(max_heap{}) = uint32_t{2} * gossip_max(CALL, usedHeap());
     node.storage(max_msg{}) = gossip_max(CALL, (int8_t)min(node.msg_size(), size_t{127}));
 }
-FUN_EXPORT resource_tracking_t = export_list<gossip_max_t<uint16_t>, gossip_max_t<uint8_t>>;
+FUN_EXPORT resource_tracking_t = export_list<gossip_max_t<uint16_t>, gossip_max_t<int8_t>>;
 
 //! @brief Records the set of neighbours connected at least 50% of the time.
 FUN void topology_recording(ARGS) { CODE
