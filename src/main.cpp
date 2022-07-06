@@ -59,6 +59,11 @@ FUN void simulation_handle(ARGS) {}
 //! @brief Namespace for component options.
 namespace option {
 
+//! @brief Import tags to be used for component options.
+using namespace component::tags;
+//! @brief Import tags used by aggregate functions.
+using namespace coordination::tags;
+
 //! @brief Tag-type pairs to be stored for logging after execution end.
 using rows_type = plot::rows<
     tuple_store<
@@ -103,11 +108,11 @@ int main() {
     using namespace fcpp;
 
     // Type for the network object.
-    using net_t = component::deployment<options::deployment>::net;
+    using net_t = component::deployment<option::deployment>::net;
     // Create the logger object.
-    rows_type row_store;
+    option::rows_type row_store;
     // The initialisation values.
-    auto init_v = common::make_tagged_tuple<hoodsize, plotter>(device_t{DEGREE}, &row_store);
+    auto init_v = common::make_tagged_tuple<option::hoodsize, option::plotter>(device_t{DEGREE}, &row_store);
     // Construct the network object.
     net_t network{init_v};
     // Run the program until exit.
