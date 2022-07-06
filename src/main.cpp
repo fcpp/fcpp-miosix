@@ -95,7 +95,7 @@ using rows_type = plot::rows<
 //! @brief Main FCPP option setup.
 DECLARE_OPTIONS(deployment,
     main,
-    plot_type<options::rows_type>
+    plot_type<rows_type>
 );
 
 }
