@@ -22,7 +22,6 @@
 #include "main.hpp"
 #include "driver.hpp"
 
-
 /**
  * @brief Namespace containing all the objects in the FCPP library.
  */
@@ -38,6 +37,7 @@ inline uint16_t usedStack() {
 
 //! @brief The maximum heap used by the node (divided by 2 to fit in a short)
 inline uint16_t usedHeap() {
+    using namespace miosix;
     return (MemoryProfiling::getHeapSize() - MemoryProfiling::getAbsoluteFreeHeap() - BUFFER_SIZE*1024) / 2;
 }
 
