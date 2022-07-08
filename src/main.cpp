@@ -1,21 +1,5 @@
 // Copyright © 2022 Giorgio Audrito. All Rights Reserved.
 
-#define VULNERABILITY_DETECTION 1111
-#define CONTACT_TRACING         2222
-#define NONE                    3333
-
-#ifndef CASE_STUDY
-#define CASE_STUDY NONE
-#endif
-
-#if CASE_STUDY == VULNERABILITY_DETECTION
-#define RUN_VULNERABILITY_DETECTION
-#endif
-
-#if CASE_STUDY == CONTACT_TRACING
-#define RUN_CONTACT_TRACING
-#endif
-
 #include <iostream>
 
 #include "miosix.h"
@@ -42,7 +26,7 @@ inline uint16_t usedHeap() {
 }
 
 //! @brief Whether the button is currently pressed.
-inline bool buttonPressed(device_t, times_t) {
+inline bool buttonPressed(device_t, uint16_t) {
     using namespace miosix;
     return userButton::value() == 0;
 }
@@ -63,34 +47,6 @@ namespace option {
 using namespace component::tags;
 //! @brief Import tags used by aggregate functions.
 using namespace coordination::tags;
-
-//! @brief Tag-type pairs to be stored for logging after execution end.
-using rows_type = plot::rows<
-    tuple_store<
-#ifdef RUN_VULNERABILITY_DETECTION
-        min_uid,        device_t,
-        hop_dist,       hops_t,
-        some_weak,      bool,
-#endif
-#ifdef RUN_CONTACT_TRACING
-        infected,       int8_t,
-        contacts,       std::unordered_map<device_t, times_t>,
-        positives,      std::unordered_map<device_t, times_t>,
-#endif
-        max_stack,      uint16_t,
-        max_heap,       uint32_t,
-        max_msg,        int8_t,
-        strongest_link, int8_t,
-        nbr_list,       std::vector<device_t>
-    >,
-    tuple_store<
-        plot::time,     uint16_t,
-        round_count,    uint16_t,
-        global_clock,   times_t
-    >,
-    void,
-    BUFFER_SIZE*1024
->;
 
 //! @brief Main FCPP option setup.
 DECLARE_OPTIONS(deployment,

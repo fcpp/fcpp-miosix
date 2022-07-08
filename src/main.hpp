@@ -1,5 +1,8 @@
 // Copyright © 2022 Giorgio Audrito. All Rights Reserved.
 
+#define FCPP_SYSTEM FCPP_SYSTEM_EMBEDDED
+#define FCPP_EXPORT_NUM 2
+
 #include "lib/fcpp.hpp"
 
 #define DEGREE       10  // maximum degree allowed for a deployment
@@ -23,7 +26,25 @@ inline uint16_t usedStack();
 inline uint16_t usedHeap();
 
 //! @brief Whether the button is currently pressed.
-inline bool buttonPressed(fcpp::device_t, fcpp::times_t);
+inline bool buttonPressed(fcpp::device_t, uint16_t);
+
+//! @brief Packing four booleans into a char.
+struct stat {
+    stat() = default;
+    stat(bool a, bool b, bool c, bool d) {
+        s = a*1 + b*2 + c*4 + d*8;
+    }
+    stat(stat const&) = default;
+
+    uint8_t s;
+};
+inline bool operator==(stat x, stat y) {
+    return x.s == y.s;
+}
+inline std::ostream& operator<<(std::ostream& o, stat x) {
+    o << int((x.s&1) > 0) << " " << int((x.s&2) > 0) << " " << int((x.s&4) > 0) << " " << int((x.s&8) > 0);
+    return o;
+}
 
 
 //! @brief Namespace containing the libraries of coordination routines.
@@ -39,6 +60,10 @@ namespace tags {
     struct min_uid {};
     //! @brief Distance in hops to the device with minimum UID.
     struct hop_dist {};
+    //! @brief The overall status (compressing im_weak/some_weak/infector/infected into a single char)
+    struct bool_status {};
+    //! @brief Whether the current device has only one neighbour.
+    struct im_weak {};
     //! @brief Whether some device in the network has only one neighbour.
     struct some_weak {};
     //! @brief Maximum stack size ever experienced.
@@ -49,8 +74,12 @@ namespace tags {
     struct max_msg {};
     //! @brief Percentage of transmission success for the strongest link.
     struct strongest_link {};
+    //! @brief The degree of the node.
+    struct degree {};
     //! @brief List of neighbours encountered at least 50% of the times.
     struct nbr_list {};
+    //! @brief Whether the device is the initiator of an infection.
+    struct infector {};
     //! @brief Whether the device has been infected.
     struct infected {};
     //! @brief The list of contacts met in the last period of time.
@@ -75,9 +104,9 @@ FUN void resource_tracking(ARGS) { CODE
     using namespace tags;
     node.storage(max_stack{}) = gossip_max(CALL, usedStack());
     node.storage(max_heap{}) = uint32_t{2} * gossip_max(CALL, usedHeap());
-    node.storage(max_msg{}) = gossip_max(CALL, (int8_t)min(node.msg_size(), size_t{127}));
+    node.storage(max_msg{}) = gossip_max(CALL, (uint16_t)min(node.msg_size(), size_t{255}));
 }
-FUN_EXPORT resource_tracking_t = export_list<gossip_max_t<uint16_t>, gossip_max_t<int8_t>>;
+FUN_EXPORT resource_tracking_t = export_list<gossip_max_t<uint16_t>>;
 
 //! @brief Records the set of neighbours connected at least 50% of the time.
 FUN void topology_recording(ARGS) { CODE
@@ -112,8 +141,10 @@ FUN_EXPORT termination_check_t = export_list<round_since_t>;
 //! @brief Computes whether there is a node with only one connected neighbour at a given time.
 FUN void vulnerability_detection(ARGS, int diameter) { CODE
     using namespace tags;
+    node.storage(degree{}) = node.size() - 1;
+    node.storage(im_weak{}) = node.size() <= 2;
     tie(node.storage(min_uid{}), node.storage(hop_dist{})) = diameter_election_distance(CALL, diameter);
-    bool collect_weak = sp_collection(CALL, node.storage(hop_dist{}), count_hood(CALL) <= 2, false, [](bool x, bool y) {
+    bool collect_weak = sp_collection(CALL, node.storage(hop_dist{}), node.size() <= 2, false, [](bool x, bool y) {
         return x or y;
     });
     node.storage(some_weak{}) = broadcast(CALL, node.storage(hop_dist{}), collect_weak);
@@ -123,8 +154,7 @@ FUN_EXPORT vulnerability_detection_t = export_list<diameter_election_distance_t<
 //! @brief Computes whether the current node got in contact with a positive node within a time window.
 FUN void contact_tracing(ARGS, times_t window) { CODE
     using namespace tags;
-    bool first_case = toggle_filter(CALL, buttonPressed(node.uid, node.storage(global_clock{})));
-    bool positive = first_case;
+    bool positive = node.storage(infector{}) = toggle_filter(CALL, buttonPressed(node.uid, node.storage(round_count{})));
     using contact_t = std::unordered_map<device_t, times_t>;
     node.storage(contacts{}) = old(CALL, contact_t{}, [&](contact_t c){
         // discard old contacts
@@ -152,7 +182,7 @@ FUN void contact_tracing(ARGS, times_t window) { CODE
         }, np, 0);
         return p;
     });
-    node.storage(infected{}) = first_case ? 2 : positive ? 1 : 0;
+    node.storage(infected{}) = positive;
     for (auto c : node.storage(positives{}))
         if (node.storage(contacts{}).count(c.first))
             node.storage(infected{}) = true;
@@ -168,24 +198,18 @@ FUN void simulation_handle(ARGS);
 //! @brief Main aggregate function.
 MAIN() {
     time_tracking(CALL);
-#ifdef RUN_VULNERABILITY_DETECTION
     vulnerability_detection(CALL, DIAMETER);
-#endif
-#ifdef RUN_CONTACT_TRACING
     contact_tracing(CALL, WINDOW_TIME);
-#endif
     resource_tracking(CALL);
     topology_recording(CALL);
     termination_check(CALL);
     simulation_handle(CALL);
+    using namespace tags;
+    node.storage(bool_status{}) = stat(node.storage(im_weak{}), node.storage(some_weak{}), node.storage(infector{}), node.storage(infected{}));
 }
 FUN_EXPORT main_t = export_list<
-#ifdef RUN_VULNERABILITY_DETECTION
     vulnerability_detection_t,
-#endif
-#ifdef RUN_CONTACT_TRACING
     contact_tracing_t,
-#endif
     time_tracking_t, resource_tracking_t, topology_recording_t, termination_check_t
 >;
 
@@ -212,15 +236,38 @@ using store_type = tuple_store<
     global_clock,   times_t,
     min_uid,        device_t,
     hop_dist,       hops_t,
+    im_weak,        bool,
     some_weak,      bool,
-    infected,       int8_t,
+    infector,       bool,
+    infected,       bool,
+    bool_status,    stat,
     contacts,       std::unordered_map<device_t, times_t>,
     positives,      std::unordered_map<device_t, times_t>,
     max_stack,      uint16_t,
     max_heap,       uint32_t,
-    max_msg,        int8_t,
+    max_msg,        uint8_t,
     strongest_link, int8_t,
+    degree,         int8_t,
     nbr_list,       std::vector<device_t>
+>;
+
+//! @brief Tag-type pairs to be stored for logging after execution end.
+using rows_type = plot::rows<
+    tuple_store<
+        min_uid,        device_t,
+        hop_dist,       hops_t,
+        bool_status,    stat,
+        max_stack,      uint16_t,
+        max_heap,       uint32_t,
+        max_msg,        uint8_t,
+        degree,         int8_t,
+        nbr_list,       std::vector<device_t>
+    >,
+    tuple_store<
+        global_clock,   times_t
+    >,
+    void,
+    BUFFER_SIZE*1024
 >;
 
 //! @brief Main FCPP option setup.
