@@ -28,6 +28,9 @@ inline uint16_t usedHeap();
 //! @brief Whether the button is currently pressed.
 inline bool buttonPressed(fcpp::device_t, uint16_t);
 
+//! @brief Turn on or off the red LED.
+inline void setRedLed(bool value);
+
 //! @brief Packing four booleans into a char.
 struct stat {
     stat() = default;
@@ -155,6 +158,7 @@ FUN_EXPORT vulnerability_detection_t = export_list<diameter_election_distance_t<
 FUN void contact_tracing(ARGS, times_t window) { CODE
     using namespace tags;
     bool positive = node.storage(infector{}) = toggle_filter(CALL, buttonPressed(node.uid, node.storage(round_count{})));
+    setRedLed(positive);
     using contact_t = std::unordered_map<device_t, times_t>;
     node.storage(contacts{}) = old(CALL, contact_t{}, [&](contact_t c){
         // discard old contacts

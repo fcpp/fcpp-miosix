@@ -31,6 +31,20 @@ inline bool buttonPressed(device_t, uint16_t) {
     return userButton::value() == 0;
 }
 
+//! @brief To be called at startup to make the red LED available
+inline void configureRedLed()
+{
+    using namespace miosix;
+    redLed::mode(Mode::OUTPUT);
+}
+
+//! @brief Turn on or off the red LED.
+inline void setRedLed(bool value)
+{
+    using namespace miosix;
+    if(value) redLed::high(); else redLed::low();
+}
+
 
 //! @brief Namespace containing the libraries of coordination routines.
 namespace coordination {
@@ -63,6 +77,7 @@ DECLARE_OPTIONS(deployment,
 int main() {
     using namespace fcpp;
 
+    configureRedLed();
     // Type for the network object.
     using net_t = component::deployment<option::deployment>::net;
     // Create the logger object.
