@@ -280,7 +280,8 @@ DECLARE_OPTIONS(main,
     exports<coordination::main_t>,
     retain_type,
     schedule_type,
-    store_type
+    store_type,
+    message_push<false>
 );
 
 } // namespace option
