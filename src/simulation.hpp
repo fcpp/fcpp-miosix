@@ -39,6 +39,9 @@ inline bool buttonPressed(device_t uid, uint16_t t) {
     return uid == 0 and (t == 40 or t == 80 or t == 280 or t == 290);
 }
 
+//! @brief Turn on or off the red LED.
+inline void setRedLed(bool) {}
+
 //! @brief Namespace containing the libraries of coordination routines.
 namespace coordination {
 

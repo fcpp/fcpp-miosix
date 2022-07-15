@@ -17,3 +17,4 @@ project(
 # target declaration
 fcpp_target(./src/simulation.cpp ON)
 fcpp_target(./src/batch.cpp      OFF)
+fcpp_target(./src/plotter.cpp    OFF)
