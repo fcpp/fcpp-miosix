@@ -13,7 +13,9 @@ namespace fcpp {
     //! @brief Reads a storage tuple row from a string stream.
     template <typename R, typename S, typename... Ss>
     inline void read_row(std::stringstream& ss, R& row, common::type_sequence<S, Ss...>) {
-        ss >> common::get<S>(row);
+        double r;
+        ss >> r;
+        common::get<S>(row) = r;
         read_row(ss, row, common::type_sequence<Ss...>{});
     }
 
@@ -115,6 +117,6 @@ int main() {
         p << pr;
     }
     // Write plots.
-    std::cout << plot::file("simulation", p.build());
+    std::cout << plot::file("plotter", p.build());
     return 0;
 }
