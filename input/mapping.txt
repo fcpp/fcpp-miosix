@@ -1,0 +1,28 @@
+Node mapping
+============
+
+Each WandStem nodes has different IDs for different purposes, this table helps
+mapping which node is which.
+
+Box number: each node is placed in a box for easy deployment, with a "node0",
+"node1" and so on written on it. This ID is used for naming the txt files of the
+logs as well, as nodes are connected one by one to a computer and the file name
+was made based on the box number.
+
+FCPP ID is a hash of the microcontroller hardware unique ID, used by FCPP to
+indentify nodes.
+
+Paper name: we renamed the nodes using a simple incremental number from 0 to 7
+to hide the inessential details of the other numbering schemes.
+
+Box     FCPP  Paper
+number  id    name
+===================
+node0  33115  1
+node3  33060  0 (kept this as 0 so that min_uid matches)
+node5  65449  2
+node9  65499  3
+node10 65496  4
+node11 65448  5
+node12 65498  6
+node13 65497  7
